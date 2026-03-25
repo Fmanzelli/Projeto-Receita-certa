@@ -197,7 +197,7 @@ const Ingredients = () => {
                     <div className="flex flex-col items-center justify-center gap-3">
                       <Database className="text-gray-300 dark:text-zinc-700 h-10 w-10 opacity-50" />
                       <p className="font-medium text-gray-600 dark:text-zinc-400">Seu estoque está vazio.</p>
-                      <p className="text-sm max-w-sm">Adicione os produtos que você comprou acima. O custo flacionado será calculado magicamente para usar nas calculadoras de receita.</p>
+                      <p className="text-sm max-w-sm">Adicione os produtos que você comprou acima. O custo fracionado será calculado magicamente para usar nas calculadoras de receita.</p>
                     </div>
                   </td>
                 </tr>

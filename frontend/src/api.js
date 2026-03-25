@@ -12,4 +12,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Se o token expirar ou for inválido, o Backend retorna 403 ou 401.
+    // Capturamos isso globalmente para deslogar e mandar p/ Login limpar os erros.
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      localStorage.removeItem('jeyfoods_token');
+      localStorage.removeItem('jeyfoods_user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

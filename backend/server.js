@@ -30,7 +30,9 @@ const authLimiter = rateLimit({
 });
 
 // Routes
-app.use('/auth', authLimiter, authRoutes);
+app.use('/auth/login', authLimiter);
+app.use('/auth/register', authLimiter);
+app.use('/auth', authRoutes);
 app.use('/ingredients', ingredientsRoutes);
 app.use('/recipes', recipesRoutes);
 
