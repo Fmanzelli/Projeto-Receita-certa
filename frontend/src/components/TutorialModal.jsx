@@ -25,42 +25,42 @@ const TutorialModal = ({ isOpen, onClose }) => {
           <div className="space-y-3">
             <h3 className="font-semibold text-brand-700 dark:text-brand-400 flex items-center gap-3 text-lg">
               <span className="bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">1</span>
-              Estoque de Ingredientes Inteligente
+              Estoque de Ingredientes Básicos
             </h3>
             <p className="text-gray-600 dark:text-zinc-400 leading-relaxed pl-10">
-              No menu <strong>Ingredientes</strong>, não precisa mais calcular preço fracionado de cabeça! Basta inserir o <strong>tamanho do pacote</strong> que você comprou e o <strong>preço total pago</strong>.
-              <br/><span className="text-xs mt-1 block bg-gray-50 dark:bg-zinc-900/50 p-2 rounded border border-gray-100 dark:border-zinc-800/80"><strong>💡 Exemplo:</strong> Comprou um pacote de 5kg de Farinha por R$ 20,00? Digite "5", unidade "kg" e valor "20". O sistema vai calcular automaticamente que custou R$ 4,00 o quilo para usar nas receitas!</span>
+              No menu <strong>Ingredientes</strong>, informe coisas brutas que você compra mercado. Diga o tamanho do pacote e o preço total que o sistema cuidará do fracionamento.
+              <br/><span className="text-xs mt-1 block bg-gray-50 dark:bg-zinc-900/50 p-2 rounded border border-gray-100 dark:border-zinc-800/80"><strong>💡 Exemplo:</strong> Comprou um saco de 5kg de Farinha por R$ 20,00? O sistema vai guardar que a farinha custa R$ 4,00 o quilo para usar futuramente!</span>
             </p>
           </div>
 
           <div className="space-y-3">
             <h3 className="font-semibold text-brand-700 dark:text-brand-400 flex items-center gap-3 text-lg">
               <span className="bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">2</span>
-              Criar Nova Calculadora (Receita)
+              Criar "Bases" e Estipular o Rendimento Bruto
             </h3>
             <p className="text-gray-600 dark:text-zinc-400 leading-relaxed pl-10">
-              No menu <strong>Fichas Técnicas</strong>, clique em <strong>Nova Calculadora</strong>. Insira o nome do produto e o <strong>Rendimento</strong> (ex: quantas fatias ou unidades rende uma fornada). Em seguida, vá adicionando os ingredientes.
+              No menu <strong>Ficha Técnica (Montagem)</strong>, você precisa fornecer um <strong>Rendimento Bruto</strong>. Por exemplo, se criar uma "Massa de Empadão", avise que aquela panela rende <strong>1000 Gramas (G)</strong>.
             </p>
           </div>
 
           <div className="space-y-3">
             <h3 className="font-semibold text-brand-700 dark:text-brand-400 flex items-center gap-3 text-lg">
               <span className="bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">3</span>
-              Mão de Obra e Custos Invisíveis
+              Super Montagem: Pré-Preparos e Conversores
             </h3>
             <p className="text-gray-600 dark:text-zinc-400 leading-relaxed pl-10">
-              Preencha quanto tempo você gastou na receita e qual o <strong>Valor da sua Hora</strong>. Adicione também a taxa de <strong>Overhead %</strong> (luz, água, aluguel) e os custos fixos com <strong>Embalagem</strong>.
+              Na caixa de adicionar Itens à sua ficha, você verá os <strong>Ingredientes Crus</strong> misturados com outras Fichas Prontas 📦 (Pré-preparos)! 
+              <br/><span className="text-xs mt-1 block bg-brand-50 dark:bg-brand-500/10 p-2 rounded border border-brand-100/30 text-brand-800 dark:text-brand-300"><strong>⚖️ Conversão Mágica:</strong> Se sua farinha foi cadastrada em quilos, mas você quiser adicionar <strong>500 gramas</strong> na receita, basta digitar 500 e selecionar o selo <strong>"g"</strong> que o motor divide o peso invisivelmente.</span>
             </p>
           </div>
 
           <div className="space-y-3">
             <h3 className="font-semibold text-brand-700 dark:text-brand-400 flex items-center gap-3 text-lg">
               <span className="bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">4</span>
-              Análise em Tempo Real
+              Análise em Tempo Real (Cascata)
             </h3>
             <p className="text-gray-600 dark:text-zinc-400 leading-relaxed pl-10">
-              O painel <strong>Resumo de Custos</strong> na lateral direita faz toda a matemática sozinha de forma instantânea. Altere a <strong>Margem de Lucratividade</strong> (ex: digite 3 para Multiplicar 3x) e veja o <strong>Preço Sugerido de Venda</strong> piscar e atualizar na hora! 
-              <br/><span className="text-xs mt-1 block italic text-brand-600 dark:text-brand-400">Não esqueça de clicar em "Salvar Configurações" no final para guardar essa Ficha.</span>
+              O painel <strong>Dashboard Lateral</strong> compila sua mão de obra com os ingredientes e reage ao instantâneo a cada alteração. Altere a <strong>Margem de Lucro</strong> (ex: digite 3 para Ganhar 3x) e veja o <strong>Preço Sugerido de Venda</strong> da Mão, do Pacote Único e do Rendimento piscarem em tempo real! 
             </p>
           </div>
         </div>

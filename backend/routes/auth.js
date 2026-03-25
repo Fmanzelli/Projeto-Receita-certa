@@ -2,8 +2,33 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require('../db');
 const { authenticateToken, JWT_SECRET } = require('../middlewares/authMiddleware');
+
+const ENCRYPTION_KEY = 'ReceitaCertaSecSecretLGPDKey256!'; // 32 bytes (Fixos para MVP)
+const FIXED_IV = Buffer.alloc(16, 0);
+
+function encrypt(text) {
+  try {
+    let cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), FIXED_IV);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return encrypted.toString('hex');
+  } catch(e) { return text; }
+}
+
+function decryptGraceful(text) {
+  try {
+    let encryptedText = Buffer.from(text, 'hex');
+    let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), FIXED_IV);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+  } catch (e) {
+    return text; // Fallback para CPFs antigos salvos em texto puro
+  }
+}
 
 // Validar idade > 18
 const isAdult = (birthDateString) => {
@@ -31,9 +56,15 @@ router.post('/register', async (req, res) => {
     }
 
     // Verificar se usuário já existe
-    const [existing] = await db.query('SELECT id FROM users WHERE email = ? OR cpf = ?', [email, cpf]);
+    const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
-      return res.status(400).json({ error: 'Este e-mail ou CPF fornecido já está vinculado a outro locatário (conta).' });
+      return res.status(400).json({ error: 'Este e-mail já está vinculado a outro corporativo.' });
+    }
+
+    const encryptedCpf = encrypt(cpf);
+    const [existingCpf] = await db.query('SELECT id FROM users WHERE cpf = ?', [encryptedCpf]);
+    if (existingCpf.length > 0) {
+      return res.status(400).json({ error: 'Este CPF já está registrado em nossa base.' });
     }
 
     // Hash da senha
@@ -43,7 +74,7 @@ router.post('/register', async (req, res) => {
     // Cadastrar
     const [result] = await db.query(
       'INSERT INTO users (name, cpf, birth_date, email, password) VALUES (?, ?, ?, ?, ?)',
-      [name, cpf, birth_date, email, hashedPassword]
+      [name, encryptedCpf, birth_date, email, hashedPassword]
     );
 
     res.status(201).json({ 
@@ -78,7 +109,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, name: user.name, email: user.email },
       JWT_SECRET,
-      { expiresIn: '24h' } // Token expira em 24h
+      { expiresIn: '2h' } // Token expira rapido por SecOps (SaaS)
     );
 
     res.json({
@@ -96,7 +127,11 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const [users] = await db.query('SELECT id, name, cpf, birth_date, email, created_at FROM users WHERE id = ?', [req.user.id]);
     if (users.length === 0) return res.status(404).json({ error: 'Usuário não encontrado.' });
-    res.json(users[0]);
+    
+    const user = users[0];
+    user.cpf = decryptGraceful(user.cpf); // Descriptografa p/ o titular enxergar!
+    
+    res.json(user);
   } catch (error) {
     res.status(500).json({ error: 'Erro no servidor: ' + error.message });
   }
