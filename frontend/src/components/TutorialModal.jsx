@@ -57,6 +57,16 @@ const TutorialModal = ({ isOpen, onClose }) => {
           <div className="space-y-3">
             <h3 className="font-semibold text-brand-700 dark:text-brand-400 flex items-center gap-3 text-lg">
               <span className="bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">4</span>
+              Mão de Obra e Custos Indiretos
+            </h3>
+            <p className="text-gray-600 dark:text-zinc-400 leading-relaxed pl-10">
+              Preencha quanto tempo você gastou e o Valor da sua Hora. Em <strong>Custos Indiretos (%)</strong>, coloque uma margem (ex: 15) para cobrir despesas invisíveis impossíveis de pesar na balança, como água, luz, gás e perdas no processo!
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="font-semibold text-brand-700 dark:text-brand-400 flex items-center gap-3 text-lg">
+              <span className="bg-brand-100 text-brand-700 dark:bg-brand-500/20 dark:text-brand-400 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">5</span>
               Análise em Tempo Real (Cascata)
             </h3>
             <p className="text-gray-600 dark:text-zinc-400 leading-relaxed pl-10">

@@ -15,6 +15,7 @@ const Recipes = () => {
     overhead_percent: 0, packaging_cost: 0, profit_margin: 0
   });
   const [recipeIngredients, setRecipeIngredients] = useState([]);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   
   // Novo State p/ Injeção Dupla (Ingredientes Naturais e Pré-preparos) com Conversão de Unidade
   const [itemForm, setItemForm] = useState({ component_id: '', quantity: '', unit: 'g' });
@@ -80,8 +81,9 @@ const Recipes = () => {
 
   const handleCreateNewProfile = () => {
     setSelectedRecipe(null);
+    setIsCreatingNew(true);
     setCalcForm({
-      name: 'Nova Ficha Técnica', yield_quantity: 1, yield_unit: 'un',
+      name: '', yield_quantity: 1, yield_unit: 'un',
       labor_time: 0, labor_rate: 0,
       overhead_percent: 0, packaging_cost: 0, profit_margin: 0
     });
@@ -98,6 +100,7 @@ const Recipes = () => {
         const response = await api.post('/recipes', calcForm);
         setSelectedRecipe({ id: response.data.id, name: response.data.name });
       }
+      setIsCreatingNew(false);
       fetchRecipes();
       alert("Receita e Cálculo Arquivados no SaaS!");
     } catch (error) {
@@ -209,7 +212,7 @@ const Recipes = () => {
                   {recipes.map(recipe => (
                     <li 
                       key={recipe.id} 
-                      onClick={() => setSelectedRecipe(recipe)}
+                      onClick={() => { setSelectedRecipe(recipe); setIsCreatingNew(false); }}
                       className={`p-4 cursor-pointer transition-all hover:bg-brand-50 dark:hover:bg-brand-500/10 group relative ${selectedRecipe?.id === recipe.id ? 'bg-brand-50 dark:bg-brand-500/20 shadow-inner' : ''}`}
                     >
                       <div className="pr-12 flex flex-col">
@@ -231,7 +234,7 @@ const Recipes = () => {
 
         {/* Lados Central e Direito (Monitor e Dashboard) */}
         <div className="xl:col-span-3 space-y-6">
-          {!calcForm.name && !selectedRecipe ? (
+          {!isCreatingNew && !selectedRecipe ? (
              <div className="h-full flex flex-col items-center justify-center text-center p-12 border border-dashed border-brand-200 dark:border-brand-500/30 rounded-2xl bg-brand-50 dark:bg-brand-500/5 xl:h-[700px]">
              <div className="bg-white dark:bg-zinc-900/50 p-5 rounded-2xl shadow-sm mb-5">
                <Calculator size={48} className="text-brand-400 dark:text-brand-300 opacity-80" />
@@ -347,7 +350,7 @@ const Recipes = () => {
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1">Overhead (%) <Info size={12} title="Acréscimo Oculto"/></label>
+                        <label className="text-xs font-semibold text-gray-500 mb-1 flex items-center gap-1">Custos Indiretos (%) <Info size={12} title="Gás, Luz, Água, Perdas"/></label>
                         <input type="number" step="1" name="overhead_percent" value={calcForm.overhead_percent} onChange={handleChange} className="input-field bg-gray-50 dark:bg-zinc-800/30" placeholder="Ex: 20"/>
                       </div>
                       <div>
