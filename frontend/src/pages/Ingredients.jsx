@@ -180,7 +180,7 @@ const Ingredients = () => {
                     </div>
                   </td>
                   <td className="table-cell px-6">
-                    <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex justify-center gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleEdit(ing)} className="p-1.5 text-blue-600 dark:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors border border-transparent hover:border-blue-100 dark:border-blue-500/20" title="Editar Compra">
                         <Edit2 size={16} />
                       </button>

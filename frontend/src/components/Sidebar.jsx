@@ -1,11 +1,19 @@
-import { NavLink } from 'react-router-dom';
-import { Database, BookOpen, Moon, Sun, HelpCircle, LogOut } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Database, BookOpen, Moon, Sun, HelpCircle, LogOut, X } from 'lucide-react';
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 
-const Sidebar = ({ onOpenTutorial }) => {
+const Sidebar = ({ onOpenTutorial, isOpen, onClose }) => {
   const [isDark, setIsDark] = useState(false);
   const { user, logout } = useContext(AuthContext);
+  const location = useLocation();
+
+  // Fechar sidebar mobile ao mudar de rota
+  useEffect(() => {
+    if (isOpen) {
+      onClose();
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     // Check initial layout
@@ -25,7 +33,7 @@ const Sidebar = ({ onOpenTutorial }) => {
   };
 
   return (
-    <div className="w-64 bg-white dark:bg-zinc-950/50 dark:backdrop-blur-3xl shadow-[4px_0_24px_rgba(0,0,0,0.02)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)] border-r border-gray-100 dark:border-zinc-800/50 flex flex-col z-10 transition-colors duration-300">
+    <div className={`fixed lg:relative inset-y-0 left-0 z-50 w-72 lg:w-64 bg-white dark:bg-zinc-950/95 dark:backdrop-blur-3xl shadow-[4px_0_24px_rgba(0,0,0,0.02)] dark:shadow-[4px_0_24px_rgba(0,0,0,0.5)] border-r border-gray-100 dark:border-zinc-800/50 flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
       <div className="p-6 flex items-center justify-between border-b border-gray-50 dark:border-zinc-800/50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center p-1 bg-white border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden shrink-0">
@@ -36,6 +44,9 @@ const Sidebar = ({ onOpenTutorial }) => {
             <h1 className="text-xl font-bold tracking-tight text-brand-600 dark:text-brand-400 leading-tight dark:drop-shadow-[0_0_8px_rgba(177,42,42,0.4)]">Certa</h1>
           </div>
         </div>
+        <button className="lg:hidden p-2 text-gray-400 hover:text-gray-600 dark:text-zinc-500 dark:hover:text-zinc-300" onClick={onClose}>
+          <X size={20} />
+        </button>
       </div>
       
       <nav className="flex-1 p-5 space-y-2">
