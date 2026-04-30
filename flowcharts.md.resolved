@@ -1,0 +1,98 @@
+# Diagramas de Fluxo - Projeto Receita Certa
+
+Abaixo estão os diagramas representando a arquitetura e o fluxo de interação do sistema.
+
+## 1. Fluxo de Navegação do Usuário (Frontend)
+Este diagrama ilustra como um usuário navega pelas telas do aplicativo Receita Certa, desde o acesso até o gerenciamento de ingredientes e receitas.
+
+```mermaid
+graph TD
+    A[Acesso ao Site] --> B{Possui Conta?}
+    B -- Não --> C[Tela de Cadastro /Register]
+    B -- Sim --> D[Tela de Login /Login]
+    
+    C -->|Criação de Conta| D
+    D -->|Autenticação JWT| E((App Logado))
+    
+    E --> F[Página: Ingredientes]
+    E --> G[Página: Receitas e Fichas Técnicas]
+    E --> H[Página: Perfil]
+    
+    F -->|CRUD| F1(Criar, Editar, Excluir Ingredientes)
+    G -->|CRUD| G1(Montar Nova Ficha Técnica)
+    G -->|Visualização| G2(Detalhes de Custo e Margem)
+    
+    G1 -.->|Busca| F
+    G1 -.->|Pode incluir| G(Sub-Receitas)
+    
+    H --> H1(Ver Dados e Sair/Logout)
+    H1 -->|Logout| D
+```
+
+## 2. Arquitetura do Sistema e Fluxo de Dados (Fullstack)
+Este diagrama detalha a comunicação entre o cliente, a API em Node.js e o Banco de Dados MySQL.
+
+```mermaid
+sequenceDiagram
+    participant U as Usuário (Browser)
+    participant F as Frontend (React/Vite)
+    participant A as Backend API (Node/Express)
+    participant DB as Banco de Dados (MySQL)
+
+    U->>F: Acessa Aplicativo
+    F->>A: Requisição HTTP (via Axios/Fetch)
+    
+    Note over A: Rate Limit & Helmet (Segurança)
+    
+    alt Autenticação
+        A->>DB: Verifica Login/Senha
+        DB-->>A: Retorna Dados
+        A-->>F: JWT Token (Sessão Iniciada)
+    else Rotas Protegidas (Ingredientes/Receitas)
+        A->>A: Valida Token JWT
+        A->>DB: Query SQL (Ex: SELECT * FROM recipes)
+        DB-->>A: Resultados (JSON)
+        A-->>F: HTTP 200 OK (Dados)
+        F-->>U: Atualiza Interface Gráfica
+    end
+```
+
+## 3. Modelo Estrutural Avançado (BOM - Bill of Materials)
+Como as Fichas Técnicas se relacionam com Ingredientes e Sub-receitas no banco de dados.
+
+```mermaid
+erDiagram
+    USERS ||--o{ INGREDIENTS : possui
+    USERS ||--o{ RECIPES : possui
+    
+    RECIPES ||--o{ RECIPE_INGREDIENTS : composto_por
+    INGREDIENTS ||--o{ RECIPE_INGREDIENTS : utilizado_em
+    RECIPES ||--o{ RECIPE_INGREDIENTS : pode_ser_sub_receita
+
+    USERS {
+        int id
+        string email
+        string password
+    }
+    
+    INGREDIENTS {
+        int id
+        string name
+        decimal cost_per_unit
+    }
+    
+    RECIPES {
+        int id
+        string name
+        decimal labor_cost
+        decimal profit_margin
+    }
+    
+    RECIPE_INGREDIENTS {
+        int id
+        int recipe_id
+        int ingredient_id
+        int sub_recipe_id
+        decimal quantity
+    }
+```
