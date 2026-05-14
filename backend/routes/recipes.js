@@ -37,7 +37,12 @@ function getConvertedCost(baseCost, baseUnitRaw, usedUnitRaw) {
 }
 
 // === MOTOR RECURSIVO DE CUSTOS (BOM) ===
-async function calculateBOMCost(recipe_id, user_id, connection) {
+async function calculateBOMCost(recipe_id, user_id, connection, visitedIds = []) {
+  if (visitedIds.includes(String(recipe_id))) {
+    throw new Error('CircularReference');
+  }
+  const currentVisited = [...visitedIds, String(recipe_id)];
+
   // 1. Puxar Cabecalho da Receita/Sub-Receita
   const [receitas] = await connection.query('SELECT * FROM recipes WHERE id = ? AND user_id = ?', [recipe_id, user_id]);
   if (receitas.length === 0) throw new Error('RecipeNotFound');
@@ -63,7 +68,7 @@ async function calculateBOMCost(recipe_id, user_id, connection) {
        custoIngredientes += parseFloat(item.quantity) * costPerUsedUnit;
     } else if (item.sub_recipe_id) {
        // MAGIA OCORRE AQUI: A descida recursiva no buraco do coelho (Sub-receita dentro de Receita)
-       const subData = await calculateBOMCost(item.sub_recipe_id, user_id, connection);
+       const subData = await calculateBOMCost(item.sub_recipe_id, user_id, connection, currentVisited);
        
        // O Custo Base Unitário da subreceita é tudo que custa para fabricá-la DIVIDIDO pelo próprio Rendimento Físico dela.
        const yield_qty = parseFloat(subData.yield_quantity || 1);
@@ -234,6 +239,7 @@ router.get('/:id/cost', async (req, res) => {
     });
   } catch (error) {
     if(error.message === 'RecipeNotFound') return res.status(404).json({ error: 'Permissão restrita. Título não existe sob sua titularidade.' });
+    if(error.message === 'CircularReference') return res.status(400).json({ error: 'Loop infinito detectado! Uma receita está tentando usar a si mesma dentro da sua cascata de pré-preparos.' });
     res.status(500).json({ error: error.message });
   }
 });
