@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// O Vite sabe automaticamente quando está na Vercel (PROD) ou no seu PC (DEV)
+const backendUrl = import.meta.env.PROD
+  ? 'https://projeto-receita-certa.onrender.com' // <-- TROQUE PELA SUA URL REAL DA RENDER AQUI!!!
+  : 'http://localhost:3000';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  baseURL: backendUrl,
 });
 
 api.interceptors.request.use((config) => {
