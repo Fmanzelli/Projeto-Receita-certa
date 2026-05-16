@@ -4,7 +4,7 @@
   "description": "Backend para cálculo de custo de receitas",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node create_users_table.js && node migrate_saas.js && node migrate_bom.js && node migrate_pastrycal.js && node server.js",
     "dev": "node server.js"
   },
   "dependencies": {
