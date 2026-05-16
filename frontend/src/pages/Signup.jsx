@@ -44,7 +44,19 @@ const Signup = () => {
     try {
       await register(name, cpf, birthDate, email, password);
     } catch (err) {
-      setError(err.response?.data?.error || 'Erro ao realizar cadastro. Tente novamente.');
+      let errorMessage = 'Erro ao realizar cadastro. Tente novamente.';
+      if (err.response?.data?.error) {
+        if (typeof err.response.data.error === 'string') {
+          errorMessage = err.response.data.error;
+        } else if (err.response.data.error.message) {
+          errorMessage = err.response.data.error.message;
+        } else {
+          errorMessage = JSON.stringify(err.response.data.error);
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
