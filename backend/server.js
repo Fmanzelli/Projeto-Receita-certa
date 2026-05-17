@@ -36,6 +36,21 @@ app.use('/auth', authRoutes);
 app.use('/ingredients', ingredientsRoutes);
 app.use('/recipes', recipesRoutes);
 
+const { exec } = require('child_process');
+
+app.get('/setup-db', (req, res) => {
+  exec('node create_users_table.js && node migrate_saas.js && node migrate_bom.js && node migrate_pastrycal.js', (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Erro na execução: ${error.message}`);
+      return res.status(500).send(`Erro: ${error.message}`);
+    }
+    if (stderr) {
+      console.error(`Stderr: ${stderr}`);
+    }
+    res.send(`<pre>Tabelas criadas com sucesso!\n\n${stdout}</pre>`);
+  });
+});
+
 app.get('/', (req, res) => {
   res.send('API do Receita Certa MVP rodando!');
 });
