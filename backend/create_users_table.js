@@ -19,6 +19,8 @@ async function createTable() {
         user_id INT NOT NULL,
         name VARCHAR(100) NOT NULL,
         unit VARCHAR(20) NOT NULL,
+        purchase_quantity DECIMAL(10,4) DEFAULT 1,
+        purchase_price DECIMAL(10,2) DEFAULT 0,
         cost_per_unit DECIMAL(10,4) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

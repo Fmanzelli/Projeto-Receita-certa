@@ -29,6 +29,16 @@ async function migrate() {
       await db.query('ALTER TABLE ingredients ADD CONSTRAINT fk_ing_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE');
     } catch (e) { console.log('FK/Coluna em ingredients pronta ou falhou:', e.message); }
 
+    try {
+      await db.query('ALTER TABLE ingredients ADD COLUMN purchase_quantity DECIMAL(10,4) DEFAULT 1 AFTER unit');
+      console.log("Coluna purchase_quantity injetada na tabela ingredients.");
+    } catch (e) { console.log('Coluna purchase_quantity ja existe.'); }
+
+    try {
+      await db.query('ALTER TABLE ingredients ADD COLUMN purchase_price DECIMAL(10,2) DEFAULT 0 AFTER purchase_quantity');
+      console.log("Coluna purchase_price injetada na tabela ingredients.");
+    } catch (e) { console.log('Coluna purchase_price ja existe.'); }
+
     // Add user_id to recipes
     try {
       await db.query('ALTER TABLE recipes ADD COLUMN user_id INT AFTER id');
