@@ -5,10 +5,16 @@ async function migrate() {
     console.log("Iniciando migration p/ SaaS Isolado...");
 
     // Add columns to users
-    try {
-      await db.query('ALTER TABLE users ADD COLUMN cpf VARCHAR(14) UNIQUE AFTER name');
-      console.log("Coluna cpf injetada na tabela users.");
-    } catch (e) { console.log('Coluna cpf ja existe.'); }
+    const [columns] = await db.query("SHOW COLUMNS FROM users LIKE 'cpf'");
+    if (columns.length === 0) {
+      try {
+        await db.query('ALTER TABLE users ADD COLUMN cpf VARCHAR(255) UNIQUE AFTER name');
+        console.log("Coluna cpf injetada na tabela users.");
+      } catch (e) { console.log('Coluna cpf ja existe.'); }
+    } else {
+      await db.query('ALTER TABLE users MODIFY COLUMN cpf VARCHAR(255)');
+      console.log('Coluna cpf ajustada para VARCHAR(255).');
+    }
 
     try {
       await db.query('ALTER TABLE users ADD COLUMN birth_date DATE AFTER cpf');
