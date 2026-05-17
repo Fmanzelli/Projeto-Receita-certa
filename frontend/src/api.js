@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // O Vite sabe automaticamente quando está na Vercel (PROD) ou no seu PC (DEV)
 const backendUrl = import.meta.env.PROD
-  ? 'projeto-receita-certa-production.up.railway.app' // <-- TROQUE PELA SUA URL REAL DA RENDER AQUI!!!
+  ? 'https://projeto-receita-certa-production.up.railway.app'
   : 'http://localhost:3000';
 
 const api = axios.create({
