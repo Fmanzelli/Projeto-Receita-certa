@@ -47,6 +47,12 @@ async function migrate() {
       await db.query('ALTER TABLE recipes ADD CONSTRAINT fk_rec_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE');
     } catch (e) { console.log('FK/Coluna em recipes pronta ou falhou:', e.message); }
 
+    // Adicionar campo de Modo de Preparo / Anotações nas receitas
+    try {
+      await db.query('ALTER TABLE recipes ADD COLUMN instructions TEXT');
+      console.log("Coluna instructions (Modo de Preparo) injetada na tabela recipes.");
+    } catch (e) { console.log('Coluna instructions ja existe.'); }
+
     console.log("Sucesso Absoluto na Migration Arquitetural!");
     process.exit(0);
   } catch (error) {

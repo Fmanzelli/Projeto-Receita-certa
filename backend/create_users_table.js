@@ -36,6 +36,7 @@ async function createTable() {
         labor_cost DECIMAL(10,2) DEFAULT 0,
         overhead_percent DECIMAL(5,2) DEFAULT 0,
         profit_margin DECIMAL(5,2) DEFAULT 0,
+        instructions TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )

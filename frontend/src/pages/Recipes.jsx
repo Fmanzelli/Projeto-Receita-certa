@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Plus, Trash2, Calculator, Info, Save, ShoppingCart, Clock, Package, TrendingUp } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Calculator, Info, Save, ShoppingCart, Clock, Package, TrendingUp, FileText } from 'lucide-react';
 import api from '../api';
 
 const Recipes = () => {
@@ -12,7 +12,8 @@ const Recipes = () => {
   const [calcForm, setCalcForm] = useState({
     name: '', yield_quantity: 1, yield_unit: 'un',
     labor_time: 0, labor_rate: 0,
-    overhead_percent: 0, packaging_cost: 0, profit_margin: 0
+    overhead_percent: 0, packaging_cost: 0, profit_margin: 0,
+    instructions: ''
   });
   const [recipeIngredients, setRecipeIngredients] = useState([]);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -72,6 +73,7 @@ const Recipes = () => {
         overhead_percent: data.overhead_percent || 0,
         packaging_cost: data.packaging_cost || 0,
         profit_margin: data.profit_margin || 0,
+        instructions: data.instructions || '',
       });
       setRecipeIngredients(data.ingredients || []);
     } catch (error) {
@@ -85,7 +87,8 @@ const Recipes = () => {
     setCalcForm({
       name: '', yield_quantity: 1, yield_unit: 'un',
       labor_time: 0, labor_rate: 0,
-      overhead_percent: 0, packaging_cost: 0, profit_margin: 0
+      overhead_percent: 0, packaging_cost: 0, profit_margin: 0,
+      instructions: ''
     });
     setRecipeIngredients([]);
     setBaseIngredientsCost(0);
@@ -360,6 +363,21 @@ const Recipes = () => {
                         <input type="number" step="0.1" name="packaging_cost" value={calcForm.packaging_cost} onChange={handleChange} className="input-field bg-gray-50 dark:bg-zinc-800/30" placeholder="Ex: 3.50" />
                       </div>
                     </div>
+                  </section>
+
+                  {/* Modo de Preparo / Anotações do Chef */}
+                  <section>
+                    <h4 className="text-sm font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider mb-4 border-b border-gray-100 dark:border-zinc-800 pb-2">
+                      <FileText size={16} className="text-purple-500" /> Modo de Preparo / Anotações
+                    </h4>
+                    <textarea
+                      name="instructions"
+                      value={calcForm.instructions}
+                      onChange={handleChange}
+                      rows={6}
+                      className="input-field bg-gray-50 dark:bg-zinc-800/30 w-full resize-y min-h-[120px] leading-relaxed text-sm"
+                      placeholder={"Ex:\n1. Pré-aqueça o forno a 180°C.\n2. Misture os ingredientes secos.\n3. Adicione os líquidos e bata por 3 minutos.\n4. Despeje na forma untada e leve ao forno por 35 min.\n\nOu qualquer anotação importante sobre esta receita..."}
+                    />
                   </section>
                 </div>
 

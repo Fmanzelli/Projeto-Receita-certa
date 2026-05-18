@@ -113,10 +113,10 @@ router.get('/', async (req, res) => {
 // Criar receita Apenas do LOCATÁRIO
 router.post('/', async (req, res) => {
   try {
-    const { name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit } = req.body;
+    const { name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit, instructions } = req.body;
     const [result] = await db.query(
-      'INSERT INTO recipes (user_id, name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [req.user.id, name, labor_cost || 0, overhead_percent || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un']
+      'INSERT INTO recipes (user_id, name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit, instructions) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [req.user.id, name, labor_cost || 0, overhead_percent || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un', instructions || null]
     );
     res.status(201).json({ id: result.insertId, user_id: req.user.id, name });
   } catch (error) {
@@ -201,10 +201,10 @@ router.delete('/:id/ingredients/:relation_id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit } = req.body;
+    const { name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit, instructions } = req.body;
     await db.query(
-      'UPDATE recipes SET name = ?, labor_cost = ?, overhead_percent = ?, profit_margin = ?, yield_quantity = ?, yield_unit = ? WHERE id = ? AND user_id = ?',
-      [name, labor_cost || 0, overhead_percent || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un', id, req.user.id]
+      'UPDATE recipes SET name = ?, labor_cost = ?, overhead_percent = ?, profit_margin = ?, yield_quantity = ?, yield_unit = ?, instructions = ? WHERE id = ? AND user_id = ?',
+      [name, labor_cost || 0, overhead_percent || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un', instructions || null, id, req.user.id]
     );
     res.json({ message: 'Receita atualizada com sucesso' });
   } catch (error) {
