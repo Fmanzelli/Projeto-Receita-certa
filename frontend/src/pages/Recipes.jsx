@@ -128,10 +128,23 @@ const Recipes = () => {
 
   const handAddItem = async (e) => {
     e.preventDefault();
-    if (!selectedRecipe || !selectedRecipe.id) {
-      alert("Salve a Ficha primeiro clicando em 'Salvar Configurações' embaixo antes de adicionar os itens!");
-      return;
+
+    // AUTO-SAVE SILENCIOSO: Se a receita ainda não existe no banco, criamos ela agora
+    let recipeId = selectedRecipe?.id;
+    if (!recipeId) {
+      try {
+        const autoName = calcForm.name || 'Receita sem nome';
+        const response = await api.post('/recipes', { ...calcForm, name: autoName });
+        recipeId = response.data.id;
+        setSelectedRecipe({ id: recipeId, name: autoName });
+        setIsCreatingNew(false);
+        fetchRecipes(); // Atualiza a lista lateral
+      } catch (err) {
+        alert('Erro ao criar a receita automaticamente. Tente novamente.');
+        return;
+      }
     }
+
     try {
       const isSub = itemForm.component_id.startsWith('sub_');
       const realId = itemForm.component_id.split('_')[1];
@@ -143,9 +156,9 @@ const Recipes = () => {
         unit: itemForm.unit
       };
 
-      await api.post(`/recipes/${selectedRecipe.id}/ingredients`, payload);
+      await api.post(`/recipes/${recipeId}/ingredients`, payload);
       setItemForm({ component_id: '', quantity: '', unit: 'g' });
-      fetchRecipeDetails(selectedRecipe.id);
+      fetchRecipeDetails(recipeId);
     } catch (error) {
       alert(error.response?.data?.error || 'Falha ao plugar este item na montagem.');
     }
