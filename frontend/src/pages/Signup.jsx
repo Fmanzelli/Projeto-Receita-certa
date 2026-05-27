@@ -100,7 +100,7 @@ const Signup = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider ml-1">CPF</label>
                 <div className="relative">

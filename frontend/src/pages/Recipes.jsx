@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Plus, Trash2, Calculator, Info, Save, ShoppingCart, Clock, Package, TrendingUp, FileText } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Calculator, Info, Save, ShoppingCart, Clock, Package, TrendingUp, FileText, Sparkles } from 'lucide-react';
 import api from '../api';
 
 const Recipes = () => {
@@ -20,6 +20,12 @@ const Recipes = () => {
 
   // Novo State p/ Injeção Dupla (Ingredientes Naturais e Pré-preparos) com Conversão de Unidade
   const [itemForm, setItemForm] = useState({ component_id: '', quantity: '', unit: 'g' });
+
+  // --- STATES DA IA (GEMINI) ---
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [aiText, setAiText] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     fetchRecipes();
@@ -178,6 +184,64 @@ const Recipes = () => {
     setCalcForm({ ...calcForm, [e.target.name]: e.target.value });
   };
 
+  // --- FUNÇÕES DA IA (GEMINI) ---
+  const handleExtractWithAi = async () => {
+    if (!aiText.trim()) return alert("Cole o texto da receita primeiro!");
+    setIsExtracting(true);
+    try {
+      const response = await api.post('/ai/extract-recipe', { text: aiText });
+      const { recipeName, ingredients } = response.data;
+      
+      setCalcForm(prev => ({ ...prev, name: recipeName || prev.name }));
+      
+      let currentRecipeId = selectedRecipe?.id;
+      if (!currentRecipeId) {
+        const createRes = await api.post('/recipes', { ...calcForm, name: recipeName || 'Receita Importada (IA)' });
+        currentRecipeId = createRes.data.id;
+        setSelectedRecipe({ id: currentRecipeId, name: recipeName || 'Receita Importada (IA)' });
+        setIsCreatingNew(false);
+      }
+      
+      for (const item of ingredients) {
+         await api.post(`/recipes/${currentRecipeId}/ingredients`, {
+           ingredient_id: item.ingredient_id,
+           sub_recipe_id: null,
+           quantity: item.quantity,
+           unit: item.unit
+         });
+      }
+      
+      alert("✨ Receita extraída com sucesso!");
+      setShowAiModal(false);
+      setAiText('');
+      fetchRecipeDetails(currentRecipeId); 
+      fetchIngredients(); 
+      
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao extrair receita com IA.");
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleGenerateInstructions = async () => {
+    if (recipeIngredients.length === 0) return alert("Adicione ingredientes antes de gerar o modo de preparo!");
+    setIsGenerating(true);
+    try {
+      const response = await api.post('/ai/generate-instructions', { ingredientsList: recipeIngredients });
+      setCalcForm(prev => ({
+        ...prev,
+        instructions: response.data.instructions
+      }));
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao gerar modo de preparo.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // UX Instantânea da Dash Integrada com Banco Real-Time Recursivo Centralizado
   const totalIngredientsCost = baseIngredientsCost;
   const laborCost = (parseFloat(calcForm.labor_time) || 0) * (parseFloat(calcForm.labor_rate) || 0);
@@ -198,12 +262,48 @@ const Recipes = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 flex items-center gap-2">
-          <Calculator className="text-brand-600" />
-          Ficha Técnica & Montagem
-        </h2>
-        <p className="text-gray-400 dark:text-zinc-500 mt-1">Calcule custo em tempo real criando Ingredientes ou Pré-preparos de forma infinita e recursiva.</p>
+      {/* Modal Mágico da IA */}
+      {showAiModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-2xl p-6 shadow-2xl border border-indigo-500/20 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="text-indigo-500" /> Extrator Mágico de Receitas
+              </h3>
+              <button onClick={() => setShowAiModal(false)} className="text-gray-400 hover:text-red-500 font-bold p-2 text-xl leading-none">✕</button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-zinc-400 mb-4">Cole abaixo a receita copiada de um blog, instagram ou bloco de notas. A IA vai extrair todos os ingredientes para você.</p>
+            <textarea
+              className="w-full h-48 p-4 rounded-xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none text-sm text-gray-800 dark:text-white mb-4"
+              placeholder="Ex: 2 xícaras de farinha de trigo&#10;3 ovos&#10;1 colher de manteiga..."
+              value={aiText}
+              onChange={(e) => setAiText(e.target.value)}
+            />
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowAiModal(false)} className="px-4 py-2 text-gray-600 dark:text-zinc-400 font-semibold hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">Cancelar</button>
+              <button onClick={handleExtractWithAi} disabled={isExtracting} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-bold rounded-lg flex items-center gap-2 transition-all shadow-md hover:shadow-indigo-500/30">
+                {isExtracting ? <><Sparkles className="animate-pulse" size={16} /> Analisando...</> : <><Sparkles size={16} /> Extrair Ingredientes</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 flex items-center gap-2">
+            <Calculator className="text-brand-600" />
+            Ficha Técnica & Montagem
+          </h2>
+          <p className="text-gray-400 dark:text-zinc-500 mt-1">Calcule custo em tempo real criando Ingredientes ou Pré-preparos de forma infinita e recursiva.</p>
+        </div>
+        
+        <button 
+          onClick={() => setShowAiModal(true)} 
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2.5 rounded-xl shadow-lg hover:shadow-indigo-500/30 hover:scale-[1.02] transition-all font-bold text-sm"
+        >
+          <Sparkles size={16} /> Importar com IA
+        </button>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
@@ -380,9 +480,19 @@ const Recipes = () => {
 
                   {/* Modo de Preparo / Anotações do Chef */}
                   <section>
-                    <h4 className="text-sm font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider mb-4 border-b border-gray-100 dark:border-zinc-800 pb-2">
-                      <FileText size={16} className="text-purple-500" /> Modo de Preparo / Anotações
-                    </h4>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 border-b border-gray-100 dark:border-zinc-800 pb-2 gap-2">
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider">
+                        <FileText size={16} className="text-purple-500" /> Modo de Preparo
+                      </h4>
+                      <button 
+                        type="button"
+                        onClick={handleGenerateInstructions}
+                        disabled={isGenerating}
+                        className="flex items-center justify-center gap-1.5 text-[10px] sm:text-xs uppercase font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
+                      >
+                        <Sparkles size={14} className={isGenerating ? "animate-pulse" : ""} /> {isGenerating ? 'Escrevendo...' : 'Gerar com IA'}
+                      </button>
+                    </div>
                     <textarea
                       name="instructions"
                       value={calcForm.instructions}
