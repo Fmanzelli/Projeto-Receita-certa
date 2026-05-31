@@ -12,6 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Seguranças Globais
+app.set('trust proxy', 1); // Essencial para o express-rate-limit funcionar no Railway/Render
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
