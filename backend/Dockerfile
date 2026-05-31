@@ -17,5 +17,5 @@ COPY . .
 ENV PORT 8080
 EXPOSE 8080
 
-# Comando de partida oficial Security-First
-CMD ["node", "server.js"]
+# Comando de partida: roda migrações e depois inicia o servidor (via npm start)
+CMD ["npm", "start"]
