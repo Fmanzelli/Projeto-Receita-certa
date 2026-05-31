@@ -219,7 +219,8 @@ const Recipes = () => {
       
     } catch (err) {
       console.error(err);
-      alert("Erro ao extrair receita com IA.");
+      const msg = err.response?.data?.error || 'Erro ao extrair receita com IA.';
+      alert(msg);
     } finally {
       setIsExtracting(false);
     }
@@ -236,7 +237,8 @@ const Recipes = () => {
       }));
     } catch (err) {
       console.error(err);
-      alert("Erro ao gerar modo de preparo.");
+      const msg = err.response?.data?.error || 'Erro ao gerar modo de preparo.';
+      alert(msg);
     } finally {
       setIsGenerating(false);
     }

@@ -120,7 +120,8 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json({ id: result.insertId, user_id: req.user.id, name });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("ERRO NO POST /recipes:", error);
+    res.status(500).json({ error: 'Erro ao criar receita', details: error.message || error.toString() });
   }
 });
 
@@ -178,7 +179,8 @@ router.post('/:id/ingredients', async (req, res) => {
     );
     res.status(201).json({ message: 'Componente conectado à ficha.' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("ERRO NO POST /recipes/:id/ingredients:", error);
+    res.status(500).json({ error: 'Erro ao conectar componente', details: error.message || error.toString() });
   }
 });
 

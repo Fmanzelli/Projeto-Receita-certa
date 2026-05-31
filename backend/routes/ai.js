@@ -7,6 +7,50 @@ const { GoogleGenAI } = require('@google/genai');
 // Inicializa o SDK do Gemini usando a chave do .env
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// Lista de modelos em ordem de prioridade (fallback automático)
+const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
+
+// Função de espera (delay entre tentativas)
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Motor de Resiliência: Tenta chamar a IA com retry e fallback de modelo
+async function callGeminiWithRetry(params, maxRetries = 2) {
+    let lastError = null;
+
+    for (const model of MODELS) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`[IA] Tentativa ${attempt}/${maxRetries} com modelo: ${model}`);
+                const response = await ai.models.generateContent({
+                    ...params,
+                    model: model,
+                });
+                console.log(`[IA] Sucesso com modelo: ${model}`);
+                return response;
+            } catch (error) {
+                lastError = error;
+                const status = error?.status || error?.error?.code;
+                console.error(`[IA] Falha (tentativa ${attempt}) com ${model}: status=${status}, msg=${error.message}`);
+
+                // Se for erro 503 (sobrecarga) ou 429 (rate limit), espera e tenta de novo
+                if (status === 503 || status === 429) {
+                    const waitTime = attempt * 2000; // 2s, 4s...
+                    console.log(`[IA] Aguardando ${waitTime}ms antes de tentar novamente...`);
+                    await sleep(waitTime);
+                    continue;
+                }
+
+                // Se for outro tipo de erro (ex: 400, 401), não adianta tentar de novo
+                break;
+            }
+        }
+        console.log(`[IA] Modelo ${model} esgotado, tentando próximo fallback...`);
+    }
+
+    // Se chegou aqui, todos os modelos falharam
+    throw lastError;
+}
+
 // ROTA 1: Extrator Mágico (Funcionalidade A) com Auto-Healing
 // Usamos o authenticateToken para saber QUEM é o usuário logado (req.user.id)
 router.post('/extract-recipe', authenticateToken, async (req, res) => {
@@ -45,11 +89,10 @@ router.post('/extract-recipe', authenticateToken, async (req, res) => {
     Texto: """${text}"""
     `;
 
-        // 2. Chamada Mágica para o Gemini 2.5 Flash
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+        // 2. Chamada Resiliente para o Gemini (com retry e fallback)
+        const response = await callGeminiWithRetry({
             contents: prompt,
-            config: { responseMimeType: "application/json" } // Garante que a IA retorne um JSON válido
+            config: { responseMimeType: "application/json" }
         });
 
         const aiData = JSON.parse(response.text);
@@ -89,10 +132,18 @@ router.post('/extract-recipe', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Erro na extração IA:', error);
+        
+        // Mensagem amigável para o usuário quando a IA está sobrecarregada
+        const status = error?.status || error?.error?.code;
+        if (status === 503 || status === 429) {
+            return res.status(503).json({ 
+                error: 'A IA está temporariamente sobrecarregada. Aguarde alguns segundos e tente novamente.' 
+            });
+        }
+        
         res.status(500).json({ 
             error: 'Falha ao processar com IA.', 
-            details: error.message || error.toString(),
-            stack: error.stack
+            details: error.message || error.toString()
         });
     }
 });
@@ -120,8 +171,8 @@ router.post('/generate-instructions', authenticateToken, async (req, res) => {
     Retorne apenas o texto do modo de preparo de forma numerada. Sem saudações.
     `;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+        // Chamada Resiliente (com retry e fallback)
+        const response = await callGeminiWithRetry({
             contents: prompt,
         });
 
@@ -129,10 +180,17 @@ router.post('/generate-instructions', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Erro na geração de instruções:', error);
+
+        const status = error?.status || error?.error?.code;
+        if (status === 503 || status === 429) {
+            return res.status(503).json({ 
+                error: 'A IA está temporariamente sobrecarregada. Aguarde alguns segundos e tente novamente.' 
+            });
+        }
+
         res.status(500).json({ 
             error: 'Falha ao gerar o modo de preparo.',
-            details: error.message || error.toString(),
-            stack: error.stack
+            details: error.message || error.toString()
         });
     }
 });
