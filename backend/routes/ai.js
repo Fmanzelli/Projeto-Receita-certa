@@ -14,6 +14,11 @@ router.post('/extract-recipe', authenticateToken, async (req, res) => {
         const { text } = req.body;
         if (!text) return res.status(400).json({ error: 'Texto da receita não fornecido.' });
 
+        if (!process.env.GEMINI_API_KEY) {
+            console.error('ERRO CRÍTICO: GEMINI_API_KEY não configurada no ambiente.');
+            return res.status(500).json({ error: 'Configuração da IA ausente no servidor.' });
+        }
+
         // 1. Engenharia de Prompt Avançada (O segredo do Sênior)
         const prompt = `
     Você é um chef executivo e engenheiro de dados. Extraia os ingredientes, quantidades e unidades do seguinte texto.
@@ -94,6 +99,11 @@ router.post('/generate-instructions', authenticateToken, async (req, res) => {
         const { ingredientsList } = req.body;
         if (!ingredientsList || ingredientsList.length === 0) {
             return res.status(400).json({ error: 'Nenhum ingrediente fornecido.' });
+        }
+
+        if (!process.env.GEMINI_API_KEY) {
+            console.error('ERRO CRÍTICO: GEMINI_API_KEY não configurada no ambiente.');
+            return res.status(500).json({ error: 'Configuração da IA ausente no servidor.' });
         }
 
         // Transforma a lista de objetos do React numa string legível para a IA
