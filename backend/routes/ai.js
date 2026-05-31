@@ -89,7 +89,11 @@ router.post('/extract-recipe', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Erro na extração IA:', error);
-        res.status(500).json({ error: 'Falha ao processar com IA.' });
+        res.status(500).json({ 
+            error: 'Falha ao processar com IA.', 
+            details: error.message || error.toString(),
+            stack: error.stack
+        });
     }
 });
 
@@ -125,7 +129,11 @@ router.post('/generate-instructions', authenticateToken, async (req, res) => {
 
     } catch (error) {
         console.error('Erro na geração de instruções:', error);
-        res.status(500).json({ error: 'Falha ao gerar o modo de preparo.' });
+        res.status(500).json({ 
+            error: 'Falha ao gerar o modo de preparo.',
+            details: error.message || error.toString(),
+            stack: error.stack
+        });
     }
 });
 
