@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticateToken } = require('../middlewares/authMiddleware');
 
-// === DICIONÁRIO DE FÍSICA E CONVERSÃO UNIVERSAL ===
+// === DICIONARIO DE FISICA E CONVERSAO UNIVERSAL ===
 function normalizeUnit(unit) {
   if (!unit) return 'un';
   const u = unit.toLowerCase().trim();
@@ -21,8 +21,8 @@ function getConvertedCost(baseCost, baseUnitRaw, usedUnitRaw) {
   
   if (baseUnit === usedUnit) return baseCostFloat;
   
-  // Fatores Multiplicadores para a Fração de Preço
-  // Ex: Baseada em KG, eu preciso do preço de 1 G ? = Multiplico por 0.001
+  // Fatores multiplicadores para a fracao de preco.
+  // Ex: base em kg, preco de 1 g = multiplica por 0.001.
   const map = {
     'kg_to_g': 0.001,
     'g_to_kg': 1000,
@@ -33,7 +33,26 @@ function getConvertedCost(baseCost, baseUnitRaw, usedUnitRaw) {
   const factor = map[`${baseUnit}_to_${usedUnit}`];
   if (factor) return baseCostFloat * factor;
   
-  return baseCostFloat; // Fallback 1:1 se for inidentificável
+  return baseCostFloat; // Fallback 1:1 se for desconhecido.
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function resolveLaborHours(recipe) {
+  const laborTime = toNumber(recipe.labor_time);
+  const laborMinutes = toNumber(recipe.labor_minutes);
+
+  return laborTime + (laborMinutes / 60);
+}
+
+function resolveLaborCost(recipe) {
+  const explicitLaborCost = toNumber(recipe.labor_cost);
+  const laborRate = toNumber(recipe.labor_rate);
+
+  return explicitLaborCost || (resolveLaborHours(recipe) * laborRate);
 }
 
 // === MOTOR RECURSIVO DE CUSTOS (BOM) ===
@@ -48,7 +67,7 @@ async function calculateBOMCost(recipe_id, user_id, connection, visitedIds = [])
   if (receitas.length === 0) throw new Error('RecipeNotFound');
   const receita = receitas[0];
 
-  // 2. Extrair Entranhas Matemáticas Acopladas (Ingredientes Básicos e Fichas Mães/Sub-Fichas)
+  // 2. Extrair ingredientes basicos e fichas maes/sub-fichas.
   const [ingredientesRAW] = await connection.query(`
     SELECT ri.id as relation_id, 
            ri.ingredient_id, ri.sub_recipe_id, ri.quantity, ri.unit as used_unit,
@@ -70,7 +89,7 @@ async function calculateBOMCost(recipe_id, user_id, connection, visitedIds = [])
        // MAGIA OCORRE AQUI: A descida recursiva no buraco do coelho (Sub-receita dentro de Receita)
        const subData = await calculateBOMCost(item.sub_recipe_id, user_id, connection, currentVisited);
        
-       // O Custo Base Unitário da subreceita é tudo que custa para fabricá-la DIVIDIDO pelo próprio Rendimento Físico dela.
+       // O custo base unitario da subreceita e o custo total dividido pelo rendimento fisico dela.
        const yield_qty = parseFloat(subData.yield_quantity || 1);
        const baseCostOfSub = yield_qty > 0 ? (subData.total_cost / yield_qty) : subData.total_cost;
        const baseUnitOfSub = subData.yield_unit;
@@ -80,9 +99,11 @@ async function calculateBOMCost(recipe_id, user_id, connection, visitedIds = [])
     }
   }
 
-  const overhead = custoIngredientes * (parseFloat(receita.overhead_percent) / 100);
-  const custoFinal = custoIngredientes + parseFloat(receita.labor_cost) + overhead;
-  const precoVenda = custoFinal * (1 + parseFloat(receita.profit_margin) / 100);
+  const laborCost = resolveLaborCost(receita);
+  const packagingCost = toNumber(receita.packaging_cost);
+  const overhead = custoIngredientes * (toNumber(receita.overhead_percent) / 100);
+  const custoFinal = custoIngredientes + laborCost + overhead + packagingCost;
+  const precoVenda = custoFinal * (1 + toNumber(receita.profit_margin) / 100);
 
   return {
     recipe_id: receita.id,
@@ -90,17 +111,18 @@ async function calculateBOMCost(recipe_id, user_id, connection, visitedIds = [])
     yield_quantity: receita.yield_quantity,
     yield_unit: receita.yield_unit,
     ingredients_cost: custoIngredientes,
-    labor_cost: parseFloat(receita.labor_cost),
+    labor_cost: laborCost,
+    packaging_cost: packagingCost,
     overhead_cost: overhead,
     total_cost: custoFinal,
     suggested_price: precoVenda
   };
 }
 
-// Proteger todas as rotas deste arquivo com o crachá do usuário logado
+// Proteger todas as rotas deste arquivo com o usuario logado.
 router.use(authenticateToken);
 
-// Listar receitas Apenas do LOCATÁRIO
+// Listar receitas apenas do locatario.
 router.get('/', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT * FROM recipes WHERE user_id = ?', [req.user.id]);
@@ -110,13 +132,14 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Criar receita Apenas do LOCATÁRIO
+// Criar receita apenas do locatario.
 router.post('/', async (req, res) => {
   try {
-    const { name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit, instructions } = req.body;
+    const { name, labor_time, labor_minutes, labor_rate, labor_cost, overhead_percent, packaging_cost, profit_margin, yield_quantity, yield_unit, instructions } = req.body;
+    const finalLaborCost = labor_cost ?? resolveLaborCost({ labor_time, labor_minutes, labor_rate });
     const [result] = await db.query(
-      'INSERT INTO recipes (user_id, name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit, instructions) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [req.user.id, name, labor_cost || 0, overhead_percent || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un', instructions || null]
+      'INSERT INTO recipes (user_id, name, labor_time, labor_minutes, labor_rate, labor_cost, overhead_percent, packaging_cost, profit_margin, yield_quantity, yield_unit, instructions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [req.user.id, name, labor_time || 0, labor_minutes || 0, labor_rate || 0, finalLaborCost || 0, overhead_percent || 0, packaging_cost || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un', instructions || null]
     );
     res.status(201).json({ id: result.insertId, user_id: req.user.id, name });
   } catch (error) {
@@ -131,7 +154,7 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const [receitas] = await db.query('SELECT * FROM recipes WHERE id = ? AND user_id = ?', [id, req.user.id]);
     
-    if (receitas.length === 0) return res.status(404).json({ error: 'Permissão restrita. Ação cancelada.' });
+    if (receitas.length === 0) return res.status(404).json({ error: 'Permissao restrita. Acao cancelada.' });
 
     const [ingredientes] = await db.query(`
       SELECT ri.id as relation_id, 
@@ -144,12 +167,12 @@ router.get('/:id', async (req, res) => {
       WHERE ri.recipe_id = ?
     `, [id]);
 
-    // Transpilamos a máscara visual para que o Front-End React receba apenas um item "Montado" mastigado
+    // Transpila a mascara visual para o Front-End receber um item montado.
     const mapped = ingredientes.map(item => {
        if (item.ingredient_id) {
            return { relation_id: item.relation_id, is_sub: false, id: item.ingredient_id, name: item.ingredient_name, base_unit: item.ingredient_base_unit, quantity: item.quantity, used_unit: item.used_unit || item.ingredient_base_unit };
        } else {
-           return { relation_id: item.relation_id, is_sub: true, id: item.sub_recipe_id, name: `[Pré-preparo] ${item.sub_recipe_name}`, base_unit: item.sub_recipe_base_unit, quantity: item.quantity, used_unit: item.used_unit || item.sub_recipe_base_unit };
+           return { relation_id: item.relation_id, is_sub: true, id: item.sub_recipe_id, name: `[Pre-preparo] ${item.sub_recipe_name}`, base_unit: item.sub_recipe_base_unit, quantity: item.quantity, used_unit: item.used_unit || item.sub_recipe_base_unit };
        }
     });
 
@@ -166,18 +189,18 @@ router.post('/:id/ingredients', async (req, res) => {
     const { ingredient_id, sub_recipe_id, quantity, unit } = req.body;
 
     const [receitas] = await db.query('SELECT id FROM recipes WHERE id = ? AND user_id = ?', [id, req.user.id]);
-    if (receitas.length === 0) return res.status(403).json({ error: 'Permissão restrita. Ação cancelada.' });
+    if (receitas.length === 0) return res.status(403).json({ error: 'Permissao restrita. Acao cancelada.' });
     
     // Evitar DeadLock Circular 1:1 (Ex: Receita A apontando p/ A)
     if (sub_recipe_id && String(sub_recipe_id) === String(id)) {
-        return res.status(400).json({ error: 'Uma receita não pode ter ela mesma como ingrediente (Loop Infinito Bloqueado O.o).' });
+        return res.status(400).json({ error: 'Uma receita nao pode ter ela mesma como ingrediente (Loop Infinito Bloqueado O.o).' });
     }
 
     await db.query(
       'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, sub_recipe_id, quantity, unit) VALUES (?, ?, ?, ?, ?)',
       [id, ingredient_id || null, sub_recipe_id || null, quantity, unit || null]
     );
-    res.status(201).json({ message: 'Componente conectado à ficha.' });
+    res.status(201).json({ message: 'Componente conectado a ficha.' });
   } catch (error) {
     console.error("ERRO NO POST /recipes/:id/ingredients:", error);
     res.status(500).json({ error: 'Erro ao conectar componente', details: error.message || error.toString() });
@@ -190,7 +213,7 @@ router.delete('/:id/ingredients/:relation_id', async (req, res) => {
     const { id, relation_id } = req.params;
     
     const [receitas] = await db.query('SELECT id FROM recipes WHERE id = ? AND user_id = ?', [id, req.user.id]);
-    if (receitas.length === 0) return res.status(403).json({ error: 'Permissão restrita. Ação cancelada.' });
+    if (receitas.length === 0) return res.status(403).json({ error: 'Permissao restrita. Acao cancelada.' });
 
     await db.query('DELETE FROM recipe_ingredients WHERE id = ? AND recipe_id = ?', [relation_id, id]);
     res.json({ message: 'Componente removido da receita' });
@@ -203,10 +226,11 @@ router.delete('/:id/ingredients/:relation_id', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, labor_cost, overhead_percent, profit_margin, yield_quantity, yield_unit, instructions } = req.body;
+    const { name, labor_time, labor_minutes, labor_rate, labor_cost, overhead_percent, packaging_cost, profit_margin, yield_quantity, yield_unit, instructions } = req.body;
+    const finalLaborCost = labor_cost ?? resolveLaborCost({ labor_time, labor_minutes, labor_rate });
     await db.query(
-      'UPDATE recipes SET name = ?, labor_cost = ?, overhead_percent = ?, profit_margin = ?, yield_quantity = ?, yield_unit = ?, instructions = ? WHERE id = ? AND user_id = ?',
-      [name, labor_cost || 0, overhead_percent || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un', instructions || null, id, req.user.id]
+      'UPDATE recipes SET name = ?, labor_time = ?, labor_minutes = ?, labor_rate = ?, labor_cost = ?, overhead_percent = ?, packaging_cost = ?, profit_margin = ?, yield_quantity = ?, yield_unit = ?, instructions = ? WHERE id = ? AND user_id = ?',
+      [name, labor_time || 0, labor_minutes || 0, labor_rate || 0, finalLaborCost || 0, overhead_percent || 0, packaging_cost || 0, profit_margin || 0, yield_quantity || 1, yield_unit || 'un', instructions || null, id, req.user.id]
     );
     res.json({ message: 'Receita atualizada com sucesso' });
   } catch (error) {
@@ -219,7 +243,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     await db.query('DELETE FROM recipes WHERE id = ? AND user_id = ?', [id, req.user.id]);
-    res.json({ message: 'Excluída com sucesso' });
+    res.json({ message: 'Excluida com sucesso' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -235,13 +259,14 @@ router.get('/:id/cost', async (req, res) => {
       recipe_id: report.recipe_id,
       ingredients_cost: report.ingredients_cost.toFixed(4),
       labor_cost: report.labor_cost.toFixed(2),
+      packaging_cost: report.packaging_cost.toFixed(2),
       overhead_cost: report.overhead_cost.toFixed(2),
       total_cost: report.total_cost.toFixed(4),
       suggested_price: report.suggested_price.toFixed(4)
     });
   } catch (error) {
-    if(error.message === 'RecipeNotFound') return res.status(404).json({ error: 'Permissão restrita. Título não existe sob sua titularidade.' });
-    if(error.message === 'CircularReference') return res.status(400).json({ error: 'Loop infinito detectado! Uma receita está tentando usar a si mesma dentro da sua cascata de pré-preparos.' });
+    if(error.message === 'RecipeNotFound') return res.status(404).json({ error: 'Permissao restrita. Titulo nao existe sob sua titularidade.' });
+    if(error.message === 'CircularReference') return res.status(400).json({ error: 'Loop infinito detectado! Uma receita esta tentando usar a si mesma dentro da sua cascata de pre-preparos.' });
     res.status(500).json({ error: error.message });
   }
 });

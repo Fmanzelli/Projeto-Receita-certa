@@ -16,7 +16,12 @@ async function migrate_pastrycal() {
     } catch (e) { console.log('Coluna labor_time já existe ou erro:', e.message); }
 
     try {
-      await db.query('ALTER TABLE recipes ADD COLUMN labor_rate DECIMAL(10, 2) DEFAULT 0 AFTER labor_time');
+      await db.query('ALTER TABLE recipes ADD COLUMN labor_minutes DECIMAL(10, 2) DEFAULT 0 AFTER labor_time');
+      console.log("Coluna labor_minutes injetada na tabela recipes.");
+    } catch (e) { console.log('Coluna labor_minutes já existe ou erro:', e.message); }
+
+    try {
+      await db.query('ALTER TABLE recipes ADD COLUMN labor_rate DECIMAL(10, 2) DEFAULT 0 AFTER labor_minutes');
       console.log("Coluna labor_rate injetada na tabela recipes.");
     } catch (e) { console.log('Coluna labor_rate já existe ou erro:', e.message); }
 

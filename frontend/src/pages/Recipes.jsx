@@ -1,6 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Plus, Trash2, Calculator, Info, Save, ShoppingCart, Clock, Package, TrendingUp, FileText, Sparkles } from 'lucide-react';
 import api from '../api';
+
+const normalizeLaborDuration = (hoursRaw, minutesRaw) => {
+  const rawHours = Math.max(parseFloat(hoursRaw) || 0, 0);
+  const rawMinutes = Math.max(Math.round(parseFloat(minutesRaw) || 0), 0);
+  const wholeHours = Math.trunc(rawHours);
+  const minutesFromDecimalHours = Math.round((rawHours - wholeHours) * 60);
+  const totalMinutes = rawMinutes + minutesFromDecimalHours;
+
+  return {
+    labor_time: wholeHours + Math.floor(totalMinutes / 60),
+    labor_minutes: totalMinutes % 60,
+  };
+};
 
 const Recipes = () => {
   const [recipes, setRecipes] = useState([]);
@@ -11,7 +24,7 @@ const Recipes = () => {
 
   const [calcForm, setCalcForm] = useState({
     name: '', yield_quantity: 1, yield_unit: 'un',
-    labor_time: 0, labor_rate: 0,
+    labor_time: 0, labor_minutes: 0, labor_rate: 0,
     overhead_percent: 0, packaging_cost: 0, profit_margin: 0,
     instructions: ''
   });
@@ -32,12 +45,6 @@ const Recipes = () => {
     fetchIngredients();
   }, []);
 
-  useEffect(() => {
-    if (selectedRecipe) {
-      fetchRecipeDetails(selectedRecipe.id);
-    }
-  }, [selectedRecipe]);
-
   const fetchRecipes = async () => {
     try {
       const response = await api.get('/recipes');
@@ -56,10 +63,11 @@ const Recipes = () => {
     }
   };
 
-  const fetchRecipeDetails = async (id) => {
+  const fetchRecipeDetails = useCallback(async (id) => {
     try {
       const response = await api.get(`/recipes/${id}`);
       const data = response.data;
+      const normalizedLaborDuration = normalizeLaborDuration(data.labor_time, data.labor_minutes);
 
       let backendCostRaw = 0;
       try {
@@ -74,7 +82,8 @@ const Recipes = () => {
         name: data.name || '',
         yield_quantity: data.yield_quantity || 1,
         yield_unit: data.yield_unit || 'un',
-        labor_time: data.labor_time || 0,
+        labor_time: normalizedLaborDuration.labor_time,
+        labor_minutes: normalizedLaborDuration.labor_minutes,
         labor_rate: data.labor_rate || 0,
         overhead_percent: data.overhead_percent || 0,
         packaging_cost: data.packaging_cost || 0,
@@ -85,14 +94,20 @@ const Recipes = () => {
     } catch (error) {
       console.error('Erro ao montar Detalhes', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (selectedRecipe) {
+      fetchRecipeDetails(selectedRecipe.id);
+    }
+  }, [selectedRecipe, fetchRecipeDetails]);
 
   const handleCreateNewProfile = () => {
     setSelectedRecipe(null);
     setIsCreatingNew(true);
     setCalcForm({
       name: '', yield_quantity: 1, yield_unit: 'un',
-      labor_time: 0, labor_rate: 0,
+      labor_time: 0, labor_minutes: 0, labor_rate: 0,
       overhead_percent: 0, packaging_cost: 0, profit_margin: 0,
       instructions: ''
     });
@@ -100,13 +115,33 @@ const Recipes = () => {
     setBaseIngredientsCost(0);
   };
 
+  const getLaborHours = (source = calcForm) => (
+    (parseFloat(source.labor_time) || 0) + ((parseFloat(source.labor_minutes) || 0) / 60)
+  );
+
+  const getLaborCost = (source = calcForm) => (
+    getLaborHours(source) * (parseFloat(source.labor_rate) || 0)
+  );
+
+  const getRecipePayload = (overrides = {}) => {
+    const payload = { ...calcForm, ...overrides };
+    const normalizedLaborDuration = normalizeLaborDuration(payload.labor_time, payload.labor_minutes);
+
+    return {
+      ...payload,
+      ...normalizedLaborDuration,
+      labor_cost: getLaborCost({ ...payload, ...normalizedLaborDuration }),
+    };
+  };
+
   const handleSaveCalculator = async (e) => {
     e.preventDefault();
     try {
+      const payload = getRecipePayload();
       if (selectedRecipe && selectedRecipe.id) {
-        await api.put(`/recipes/${selectedRecipe.id}`, calcForm);
+        await api.put(`/recipes/${selectedRecipe.id}`, payload);
       } else {
-        const response = await api.post('/recipes', calcForm);
+        const response = await api.post('/recipes', payload);
         setSelectedRecipe({ id: response.data.id, name: response.data.name });
       }
       setIsCreatingNew(false);
@@ -140,7 +175,7 @@ const Recipes = () => {
     if (!recipeId) {
       try {
         const autoName = calcForm.name || 'Receita sem nome';
-        const response = await api.post('/recipes', { ...calcForm, name: autoName });
+        const response = await api.post('/recipes', getRecipePayload({ name: autoName }));
         recipeId = response.data.id;
         setSelectedRecipe({ id: recipeId, name: autoName });
         setIsCreatingNew(false);
@@ -196,7 +231,7 @@ const Recipes = () => {
       
       let currentRecipeId = selectedRecipe?.id;
       if (!currentRecipeId) {
-        const createRes = await api.post('/recipes', { ...calcForm, name: recipeName || 'Receita Importada (IA)' });
+        const createRes = await api.post('/recipes', getRecipePayload({ name: recipeName || 'Receita Importada (IA)' }));
         currentRecipeId = createRes.data.id;
         setSelectedRecipe({ id: currentRecipeId, name: recipeName || 'Receita Importada (IA)' });
         setIsCreatingNew(false);
@@ -246,7 +281,7 @@ const Recipes = () => {
 
   // UX Instantânea da Dash Integrada com Banco Real-Time Recursivo Centralizado
   const totalIngredientsCost = baseIngredientsCost;
-  const laborCost = (parseFloat(calcForm.labor_time) || 0) * (parseFloat(calcForm.labor_rate) || 0);
+  const laborCost = getLaborCost();
   const overheadCost = totalIngredientsCost * ((parseFloat(calcForm.overhead_percent) || 0) / 100);
   const packagingCost = parseFloat(calcForm.packaging_cost) || 0;
 
@@ -452,10 +487,14 @@ const Recipes = () => {
                     <h4 className="text-sm font-bold text-gray-900 dark:text-zinc-100 flex items-center gap-2 uppercase tracking-wider mb-4 border-b border-gray-100 dark:border-zinc-800 pb-2">
                       <Clock size={16} className="text-blue-500" /> Mão de Obra
                     </h4>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <label className="text-xs font-semibold text-gray-500 mb-1 block">Tempo (Horas)</label>
-                        <input type="number" step="0.1" name="labor_time" value={calcForm.labor_time} onChange={handleChange} className="input-field bg-gray-50 dark:bg-zinc-800/30" placeholder="Ex: 1.5" />
+                        <label className="text-xs font-semibold text-gray-500 mb-1 block">Horas</label>
+                        <input type="number" step="1" min="0" name="labor_time" value={calcForm.labor_time} onChange={handleChange} className="input-field bg-gray-50 dark:bg-zinc-800/30" placeholder="Ex: 1" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 mb-1 block">Minutos</label>
+                        <input type="number" step="1" min="0" name="labor_minutes" value={calcForm.labor_minutes} onChange={handleChange} className="input-field bg-gray-50 dark:bg-zinc-800/30" placeholder="Ex: 30" />
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-gray-500 mb-1 block">Valor Hora (R$)</label>
