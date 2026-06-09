@@ -145,7 +145,7 @@ const Recipes = () => {
         setSelectedRecipe({ id: recipeId, name: autoName });
         setIsCreatingNew(false);
         fetchRecipes(); // Atualiza a lista lateral
-      } catch (err) {
+      } catch {
         alert('Erro ao criar a receita automaticamente. Tente novamente.');
         return;
       }
