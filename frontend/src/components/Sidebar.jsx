@@ -13,7 +13,7 @@ const Sidebar = ({ onOpenTutorial, isOpen, onClose }) => {
     if (isOpen) {
       onClose();
     }
-  }, [location.pathname]);
+  }, [isOpen, location.pathname, onClose]);
 
   useEffect(() => {
     // Check initial layout

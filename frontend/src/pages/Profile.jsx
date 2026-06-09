@@ -1,10 +1,8 @@
-import { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
+import { useState, useEffect } from 'react';
 import api from '../api';
 import { User, Mail, CreditCard, Calendar, ShieldCheck, Lock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 const Profile = () => {
-    const { user, logout } = useContext(AuthContext);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     
