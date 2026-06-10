@@ -35,7 +35,7 @@ const Login = () => {
 
           <div className="text-center mb-10">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white dark:bg-zinc-900 mb-6 shadow-sm border border-gray-100 dark:border-zinc-800 overflow-hidden p-1.5">
-              <img src="/jeyfoods-logo.png" alt="Logo JeyFoods" className="w-full h-full object-contain" />
+              <img src="/LogoReceitaCerta.png" alt="Logo Receita Certa" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-zinc-100 flex items-center justify-center gap-1.5">
               Receita<span className="text-brand-600 dark:text-brand-400">Certa</span>

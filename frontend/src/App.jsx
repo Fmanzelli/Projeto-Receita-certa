@@ -64,7 +64,7 @@ function AppContent() {
           <div className="lg:hidden bg-white dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 p-4 flex items-center justify-between sticky top-0 z-30">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center p-1 bg-white border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden shrink-0">
-                <img src="/jeyfoods-logo.png" alt="JeyFoods" className="w-full h-full object-contain" />
+                <img src="/LogoReceitaCerta.png" alt="Receita Certa" className="w-full h-full object-contain" />
               </div>
               <h1 className="text-lg font-bold tracking-tight text-brand-600 dark:text-brand-400">Receita Certa</h1>
             </div>

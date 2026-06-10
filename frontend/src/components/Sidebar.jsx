@@ -37,7 +37,7 @@ const Sidebar = ({ onOpenTutorial, isOpen, onClose }) => {
       <div className="p-6 flex items-center justify-between border-b border-gray-50 dark:border-zinc-800/50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center p-1 bg-white border border-gray-100 dark:border-zinc-800 shadow-sm overflow-hidden shrink-0">
-            <img src="/jeyfoods-logo.png" alt="JeyFoods" className="w-full h-full object-contain" />
+            <img src="/LogoReceitaCerta.png" alt="Receita Certa" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-zinc-100 leading-tight">Receita</h1>
